@@ -9,13 +9,13 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { courseId: string } }
+  { params }: { params: Promise<{ courseId: string }> }
 ) {
   try {
     const corsResponse = handleCors(req);
     if (corsResponse) return corsResponse;
 
-    const { courseId } = params;
+    const { courseId } = await params;
     const course = await CourseService.getCourseById(courseId);
 
     if (!course) {
