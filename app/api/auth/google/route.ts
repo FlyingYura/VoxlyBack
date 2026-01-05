@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '../../../../lib/firebase-admin';
+import { UserService } from '../../../../services/userService';
+import { handleCors, addCorsHeaders } from '../../../../middleware/cors';
+
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCors(req);
+  return corsResponse || new NextResponse(null, { status: 200 });
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const corsResponse = handleCors(req);
+    if (corsResponse) return corsResponse;
+
+    const { idToken } = await req.json();
+
+    if (!idToken) {
+      const errorResponse = NextResponse.json(
+        { error: 'ID token is required' },
+        { status: 400 }
+      );
+      return addCorsHeaders(errorResponse, req);
+    }
+
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const { uid, email, name } = decodedToken;
+
+    if (!email) {
+      const errorResponse = NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      );
+      return addCorsHeaders(errorResponse, req);
+    }
+
+    let user: (any & { id: string }) | null = null;
+    
+    try {
+      user = await UserService.getUserByFirebaseUid(uid);
+    } catch (error: any) {
+      if (error.code === 7) {
+        console.log('PERMISSION_DENIED');
+      } else {
+        throw error;
+      }
+    }
+
+    if (!user) {
+      try {
+        const existingUser = await UserService.getUserByEmail(email);
+        
+        if (existingUser) {
+          await UserService.updateUserFirebaseUid(existingUser.id, uid);
+          user = await UserService.getUserByFirebaseUid(uid);
+        } else {
+          console.log('📝 Створюємо нового користувача в Firestore');
+          const userId = await UserService.createUser({
+            firebaseUid: uid,
+            email,
+            name: name || email.split('@')[0],
+            enrolledCourses: [],
+            paidCourses: [],
+            testResults: [],
+          });
+          console.log('Користувач створений з ID:', userId);
+          user = await UserService.getUserByFirebaseUid(uid);
+        }
+      } catch (createError: any) {
+        console.error('Помилка при створенні/оновленні користувача:', createError);
+        throw createError;
+      }
+    }
+
+    if (!user) {
+      const errorResponse = NextResponse.json(
+        { error: 'Failed to create or retrieve user' },
+        { status: 500 }
+      );
+      return addCorsHeaders(errorResponse, req);
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      user: UserService.formatUserForAPI(user as any),
+    });
+
+    return addCorsHeaders(response, req);
+  } catch (error: any) {
+    console.error('Google auth error:', error);
+    const errorResponse = NextResponse.json(
+      { error: error.message || 'Authentication failed' },
+      { status: 500 }
+    );
+    return addCorsHeaders(errorResponse, req);
+  }
+}
+
