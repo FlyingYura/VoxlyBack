@@ -12,13 +12,27 @@ function initializeFirebaseAdmin() {
       throw new Error('Firebase Admin credentials are missing. Please check your .env file.');
     }
 
-    // Handle private key formatting - replace escaped newlines with actual newlines
-    // This handles cases where the key is stored as "\\n" (escaped) in environment variables
+    // Handle private key formatting - handle multiple formats
+    // If the key already has actual newlines, keep them
+    // If it has escaped \n, replace them with actual newlines
+    if (!privateKey.includes('\n') && privateKey.includes('\\n')) {
+      // Key has escaped newlines, replace them
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+    // If key has actual newlines but also has \n sequences, clean it up
     privateKey = privateKey.replace(/\\n/g, '\n');
+    
+    // Ensure the key starts and ends correctly
+    if (!privateKey.trim().startsWith('-----BEGIN PRIVATE KEY-----')) {
+      throw new Error('Invalid private key format: missing BEGIN marker');
+    }
+    if (!privateKey.trim().endsWith('-----END PRIVATE KEY-----')) {
+      throw new Error('Invalid private key format: missing END marker');
+    }
 
     const serviceAccount = {
       projectId,
-      privateKey,
+      privateKey: privateKey.trim(),
       clientEmail,
     };
 
