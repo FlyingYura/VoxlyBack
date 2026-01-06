@@ -2,13 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173'];
 
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  
+  // Exact match
+  if (allowedOrigins.includes(origin)) return true;
+  
+  // Allow all Vercel preview and production domains
+  if (origin.endsWith('.vercel.app')) return true;
+  
+  // Allow localhost for development
+  if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) return true;
+  
+  return false;
+}
+
 export function corsMiddleware(
   req: NextRequest,
   handler: (req: NextRequest) => Promise<NextResponse>
 ) {
   const origin = req.headers.get('origin');
 
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     const response = NextResponse.next();
     response.headers.set('Access-Control-Allow-Origin', origin);
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -22,18 +37,14 @@ export function corsMiddleware(
 
 export function handleCors(req: NextRequest) {
   const origin = req.headers.get('origin');
-  const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+  const isAllowed = isAllowedOrigin(origin);
   
   if (req.method === 'OPTIONS') {
     const response = new NextResponse(null, { status: 200 });
     
-    if (origin) {
-      if (isAllowedOrigin) {
-        response.headers.set('Access-Control-Allow-Origin', origin);
-        response.headers.set('Access-Control-Allow-Credentials', 'true');
-      } else {
-        response.headers.set('Access-Control-Allow-Origin', origin);
-      }
+    if (origin && isAllowed) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
       response.headers.set('Access-Control-Max-Age', '86400');
@@ -47,10 +58,10 @@ export function handleCors(req: NextRequest) {
 
 export function addCorsHeaders(response: NextResponse, req: NextRequest): NextResponse {
   const origin = req.headers.get('origin');
-  const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+  const isAllowed = isAllowedOrigin(origin);
   
-  if (isAllowedOrigin) {
-    response.headers.set('Access-Control-Allow-Origin', origin!);
+  if (origin && isAllowed) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     response.headers.set('Access-Control-Allow-Credentials', 'true');
