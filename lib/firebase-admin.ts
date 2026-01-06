@@ -81,12 +81,12 @@ function getDb() {
   return _db;
 }
 
-// Lazy initialization using getters
+// Use Proxy but cache the instances properly
+// The issue was that each get() call was creating a new instance
 export const adminAuth = new Proxy({} as Auth, {
   get(_target, prop) {
     const auth = getAdminAuth();
     const value = (auth as any)[prop];
-    // Bind functions to preserve 'this' context
     return typeof value === 'function' ? value.bind(auth) : value;
   },
 }) as Auth;
@@ -95,7 +95,6 @@ export const db = new Proxy({} as Firestore, {
   get(_target, prop) {
     const firestore = getDb();
     const value = (firestore as any)[prop];
-    // Bind functions to preserve 'this' context
     return typeof value === 'function' ? value.bind(firestore) : value;
   },
 }) as Firestore;
