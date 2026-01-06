@@ -47,13 +47,19 @@ function getDb() {
 // Lazy initialization using getters
 export const adminAuth = new Proxy({} as Auth, {
   get(_target, prop) {
-    return (getAdminAuth() as any)[prop];
+    const auth = getAdminAuth();
+    const value = (auth as any)[prop];
+    // Bind functions to preserve 'this' context
+    return typeof value === 'function' ? value.bind(auth) : value;
   },
 }) as Auth;
 
 export const db = new Proxy({} as Firestore, {
   get(_target, prop) {
-    return (getDb() as any)[prop];
+    const firestore = getDb();
+    const value = (firestore as any)[prop];
+    // Bind functions to preserve 'this' context
+    return typeof value === 'function' ? value.bind(firestore) : value;
   },
 }) as Firestore;
 
