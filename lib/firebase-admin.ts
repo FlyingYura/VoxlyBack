@@ -9,40 +9,54 @@ function initializeFirebaseAdmin() {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
     if (!projectId || !privateKey || !clientEmail) {
+      console.error('Missing Firebase credentials:', {
+        hasProjectId: !!projectId,
+        hasPrivateKey: !!privateKey,
+        hasClientEmail: !!clientEmail,
+      });
       throw new Error('Firebase Admin credentials are missing. Please check your .env file.');
     }
 
-    // Handle private key formatting - handle multiple formats
-    // If the key already has actual newlines, keep them
-    // If it has escaped \n, replace them with actual newlines
-    if (!privateKey.includes('\n') && privateKey.includes('\\n')) {
-      // Key has escaped newlines, replace them
-      privateKey = privateKey.replace(/\\n/g, '\n');
-    }
-    // If key has actual newlines but also has \n sequences, clean it up
+    // Handle private key formatting - replace escaped newlines with actual newlines
     privateKey = privateKey.replace(/\\n/g, '\n');
     
+    // Remove any leading/trailing whitespace
+    privateKey = privateKey.trim();
+    
     // Ensure the key starts and ends correctly
-    if (!privateKey.trim().startsWith('-----BEGIN PRIVATE KEY-----')) {
+    if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
+      console.error('Invalid private key format: missing BEGIN marker');
       throw new Error('Invalid private key format: missing BEGIN marker');
     }
-    if (!privateKey.trim().endsWith('-----END PRIVATE KEY-----')) {
+    if (!privateKey.endsWith('-----END PRIVATE KEY-----')) {
+      console.error('Invalid private key format: missing END marker');
       throw new Error('Invalid private key format: missing END marker');
     }
 
     const serviceAccount = {
       projectId,
-      privateKey: privateKey.trim(),
+      privateKey,
       clientEmail,
     };
 
     try {
+      console.log('Initializing Firebase Admin SDK...');
+      console.log('Project ID:', projectId);
+      console.log('Client Email:', clientEmail);
+      console.log('Private Key length:', privateKey.length);
+      console.log('Private Key starts correctly:', privateKey.startsWith('-----BEGIN PRIVATE KEY-----'));
+      console.log('Private Key ends correctly:', privateKey.endsWith('-----END PRIVATE KEY-----'));
+      
       initializeApp({
         credential: cert(serviceAccount as any),
         projectId: serviceAccount.projectId,
       });
-    } catch (error) {
+      
+      console.log('Firebase Admin SDK initialized successfully');
+    } catch (error: any) {
       console.error('Firebase Admin initialization error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
       throw error;
     }
   }
