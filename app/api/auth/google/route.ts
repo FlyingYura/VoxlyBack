@@ -23,7 +23,21 @@ export async function POST(req: NextRequest) {
       return addCorsHeaders(errorResponse, req);
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    console.log('Verifying ID token...');
+    console.log('Token length:', idToken?.length);
+    console.log('Token preview:', idToken?.substring(0, 50));
+    
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+      console.log('Token verified successfully');
+    } catch (verifyError: any) {
+      console.error('Token verification error:', verifyError);
+      console.error('Error code:', verifyError.code);
+      console.error('Error message:', verifyError.message);
+      throw verifyError;
+    }
+    
     const { uid, email, name } = decodedToken;
 
     if (!email) {
