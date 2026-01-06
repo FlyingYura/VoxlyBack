@@ -4,15 +4,23 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 function initializeFirebaseAdmin() {
   if (!getApps().length) {
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    };
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-    if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
+    if (!projectId || !privateKey || !clientEmail) {
       throw new Error('Firebase Admin credentials are missing. Please check your .env file.');
     }
+
+    // Handle private key formatting - replace escaped newlines with actual newlines
+    // This handles cases where the key is stored as "\\n" (escaped) in environment variables
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    const serviceAccount = {
+      projectId,
+      privateKey,
+      clientEmail,
+    };
 
     try {
       initializeApp({
@@ -20,6 +28,7 @@ function initializeFirebaseAdmin() {
         projectId: serviceAccount.projectId,
       });
     } catch (error) {
+      console.error('Firebase Admin initialization error:', error);
       throw error;
     }
   }
