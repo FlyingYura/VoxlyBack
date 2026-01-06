@@ -65,7 +65,7 @@ function initializeFirebaseAdmin() {
 let _adminAuth: Auth | null = null;
 let _db: Firestore | null = null;
 
-function getAdminAuth() {
+export function getAdminAuth() {
   if (!_adminAuth) {
     initializeFirebaseAdmin();
     _adminAuth = getAuth();
@@ -73,7 +73,7 @@ function getAdminAuth() {
   return _adminAuth;
 }
 
-function getDb() {
+export function getDb() {
   if (!_db) {
     initializeFirebaseAdmin();
     _db = getFirestore();
@@ -81,21 +81,8 @@ function getDb() {
   return _db;
 }
 
-// Use Proxy but cache the instances properly
-// The issue was that each get() call was creating a new instance
-export const adminAuth = new Proxy({} as Auth, {
-  get(_target, prop) {
-    const auth = getAdminAuth();
-    const value = (auth as any)[prop];
-    return typeof value === 'function' ? value.bind(auth) : value;
-  },
-}) as Auth;
-
-export const db = new Proxy({} as Firestore, {
-  get(_target, prop) {
-    const firestore = getDb();
-    const value = (firestore as any)[prop];
-    return typeof value === 'function' ? value.bind(firestore) : value;
-  },
-}) as Firestore;
+// Export direct instances - Proxy doesn't work with Firestore
+// These will be initialized on first access at runtime
+export const adminAuth = getAdminAuth();
+export const db = getDb();
 
