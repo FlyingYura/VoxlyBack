@@ -51,8 +51,13 @@ export async function POST(req: NextRequest) {
     let user: (any & { id: string }) | null = null;
     
     try {
+      console.log('Getting user by Firebase UID:', uid);
       user = await UserService.getUserByFirebaseUid(uid);
+      console.log('User found:', !!user);
     } catch (error: any) {
+      console.error('Error getting user by Firebase UID:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       if (error.code === 7) {
         console.log('PERMISSION_DENIED');
       } else {
@@ -62,9 +67,12 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       try {
+        console.log('User not found, checking by email:', email);
         const existingUser = await UserService.getUserByEmail(email);
+        console.log('Existing user found:', !!existingUser);
         
         if (existingUser) {
+          console.log('Updating existing user Firebase UID');
           await UserService.updateUserFirebaseUid(existingUser.id, uid);
           user = await UserService.getUserByFirebaseUid(uid);
         } else {
@@ -82,6 +90,9 @@ export async function POST(req: NextRequest) {
         }
       } catch (createError: any) {
         console.error('Помилка при створенні/оновленні користувача:', createError);
+        console.error('Error code:', createError.code);
+        console.error('Error message:', createError.message);
+        console.error('Error details:', createError.details);
         throw createError;
       }
     }
