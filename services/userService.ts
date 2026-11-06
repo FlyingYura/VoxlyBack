@@ -120,6 +120,7 @@ export class UserService {
       id: user.id,
       email: user.email,
       name: user.name,
+      avatarUrl: user.avatarUrl || null,
       enrolledCourses: user.enrolledCourses || [],
       paidCourses: user.paidCourses || [],
       testResults: (user.testResults || []).map((result) => ({

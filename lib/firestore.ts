@@ -6,6 +6,7 @@ export interface FirestoreUser {
   firebaseUid: string;
   email: string;
   name: string;
+  avatarUrl?: string;
   enrolledCourses: string[];
   paidCourses: string[];
   testResults: Array<{

@@ -69,10 +69,11 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { name, enrolledCourses, paidCourses } = await req.json();
+    const { name, avatarUrl, enrolledCourses, paidCourses } = await req.json();
     const updates: any = {};
 
     if (name) updates.name = name;
+    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl || null;
     if (enrolledCourses !== undefined) updates.enrolledCourses = enrolledCourses;
     if (paidCourses !== undefined) updates.paidCourses = paidCourses;
 
