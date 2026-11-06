@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CourseService } from '../../../services/courseService';
-import { handleCors, addCorsHeaders } from '../../../middleware/cors';
+import { handleCors, addCorsHeaders } from '../../../lib/cors';
 
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCors(req);

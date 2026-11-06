@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '../../../../../services/userService';
 import { ProgressService } from '../../../../../services/progressService';
 import { verifyFirebaseToken } from '../../../../../lib/auth';
-import { handleCors, addCorsHeaders } from '../../../../../middleware/cors';
+import { handleCors, addCorsHeaders } from '../../../../../lib/cors';
 
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCors(req);

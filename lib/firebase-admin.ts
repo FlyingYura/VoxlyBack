@@ -1,65 +1,82 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { existsSync, readFileSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import 'dotenv/config';
 
-function initializeFirebaseAdmin() {
-  if (!getApps().length) {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+type ServiceAccountData = {
+  project_id?: string;
+  projectId?: string;
+  private_key?: string;
+  privateKey?: string;
+  client_email?: string;
+  clientEmail?: string;
+};
 
-    if (!projectId || !privateKey || !clientEmail) {
-      console.error('Missing Firebase credentials:', {
-        hasProjectId: !!projectId,
-        hasPrivateKey: !!privateKey,
-        hasClientEmail: !!clientEmail,
-      });
-      throw new Error('Firebase Admin credentials are missing. Please check your .env file.');
-    }
+function findServiceAccountFiles(): string[] {
+  try {
+    return readdirSync(process.cwd())
+      .filter((name) => /firebase-adminsdk.*\.json$/i.test(name))
+      .map((name) => join(process.cwd(), name));
+  } catch {
+    return [];
+  }
+}
 
-    // Handle private key formatting - replace escaped newlines with actual newlines
-    privateKey = privateKey.replace(/\\n/g, '\n');
-    
-    // Remove any leading/trailing whitespace
-    privateKey = privateKey.trim();
-    
-    // Ensure the key starts and ends correctly
-    if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
-      console.error('Invalid private key format: missing BEGIN marker');
-      throw new Error('Invalid private key format: missing BEGIN marker');
-    }
-    if (!privateKey.endsWith('-----END PRIVATE KEY-----')) {
-      console.error('Invalid private key format: missing END marker');
-      throw new Error('Invalid private key format: missing END marker');
-    }
+function readServiceAccountFile(): ServiceAccountData | null {
+  const candidates = [
+    process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    join(process.cwd(), 'serviceAccount.json'),
+    ...findServiceAccountFiles(),
+  ].filter(Boolean) as string[];
 
-    const serviceAccount = {
-      projectId,
-      privateKey,
-      clientEmail,
-    };
-
+  for (const filePath of candidates) {
     try {
-      console.log('Initializing Firebase Admin SDK...');
-      console.log('Project ID:', projectId);
-      console.log('Client Email:', clientEmail);
-      console.log('Private Key length:', privateKey.length);
-      console.log('Private Key starts correctly:', privateKey.startsWith('-----BEGIN PRIVATE KEY-----'));
-      console.log('Private Key ends correctly:', privateKey.endsWith('-----END PRIVATE KEY-----'));
-      
-      initializeApp({
-        credential: cert(serviceAccount as any),
-        projectId: serviceAccount.projectId,
-      });
-      
-      console.log('Firebase Admin SDK initialized successfully');
-    } catch (error: any) {
-      console.error('Firebase Admin initialization error:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      throw error;
+      if (!existsSync(filePath)) continue;
+      return JSON.parse(readFileSync(filePath, 'utf8')) as ServiceAccountData;
+    } catch (error) {
+      console.error('Failed to read service account file:', filePath, error);
     }
   }
+
+  return null;
+}
+
+function getCredentials() {
+  const fromFile = readServiceAccountFile();
+
+  let projectId = process.env.FIREBASE_PROJECT_ID || fromFile?.project_id || fromFile?.projectId;
+  let clientEmail = process.env.FIREBASE_CLIENT_EMAIL || fromFile?.client_email || fromFile?.clientEmail;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY || fromFile?.private_key || fromFile?.privateKey;
+
+  if (privateKey) {
+    privateKey = privateKey.replace(/\\n/g, '\n').trim();
+  }
+
+  if (!projectId || !privateKey || !clientEmail) {
+    throw new Error(
+      'Firebase Admin credentials are missing. Add the service account JSON or FIREBASE_* env variables.'
+    );
+  }
+
+  return { projectId, clientEmail, privateKey };
+}
+
+function initializeFirebaseAdmin(): App {
+  const existing = getApps()[0];
+  if (existing) return existing;
+
+  const { projectId, clientEmail, privateKey } = getCredentials();
+
+  return initializeApp({
+    credential: cert({
+      projectId,
+      clientEmail,
+      privateKey,
+    }),
+    projectId,
+  });
 }
 
 let _adminAuth: Auth | null = null;
@@ -81,8 +98,17 @@ export function getDb() {
   return _db;
 }
 
-// Export direct instances - Proxy doesn't work with Firestore
-// These will be initialized on first access at runtime
-export const adminAuth = getAdminAuth();
-export const db = getDb();
+export const adminAuth = new Proxy({} as Auth, {
+  get(_target, prop, _receiver) {
+    const value = (getAdminAuth() as unknown as Record<PropertyKey, unknown>)[prop];
+    return typeof value === 'function' ? value.bind(getAdminAuth()) : value;
+  },
+});
 
+export const db = new Proxy({} as Firestore, {
+  get(_target, prop) {
+    const instance = getDb();
+    const value = (instance as unknown as Record<PropertyKey, unknown>)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});

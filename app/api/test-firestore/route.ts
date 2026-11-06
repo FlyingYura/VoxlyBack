@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase-admin';
-import { handleCors, addCorsHeaders } from '../../../middleware/cors';
+import { handleCors, addCorsHeaders } from '../../../lib/cors';
 
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCors(req);

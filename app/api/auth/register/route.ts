@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '../../../../lib/firebase-admin';
 import { UserService } from '../../../../services/userService';
 import { verifyFirebaseToken } from '../../../../lib/auth';
-import { handleCors, addCorsHeaders } from '../../../../middleware/cors';
+import { handleCors, addCorsHeaders } from '../../../../lib/cors';
 
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCors(req);
@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     const { idToken } = await req.json();
 
     if (!idToken) {
-      return NextResponse.json(
-        { error: 'ID token is required' },
-        { status: 400 }
+      return addCorsHeaders(
+        NextResponse.json({ error: 'ID token is required' }, { status: 400 }),
+        req
       );
     }
 
@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
     const firebaseUid = await verifyFirebaseToken(idToken);
 
     if (!firebaseUid) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
+      return addCorsHeaders(
+        NextResponse.json({ error: 'Invalid token' }, { status: 401 }),
+        req
       );
     }
 
@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Failed to create or retrieve user' },
-        { status: 500 }
+      return addCorsHeaders(
+        NextResponse.json({ error: 'Failed to create or retrieve user' }, { status: 500 }),
+        req
       );
     }
 
@@ -76,9 +76,9 @@ export async function POST(req: NextRequest) {
     return addCorsHeaders(response, req);
   } catch (error: any) {
     console.error('Registration error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Registration failed' },
-      { status: 500 }
+    return addCorsHeaders(
+      NextResponse.json({ error: error.message || 'Registration failed' }, { status: 500 }),
+      req
     );
   }
 }

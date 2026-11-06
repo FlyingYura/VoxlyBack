@@ -12,7 +12,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '3 місяці',
     price: 550,
     description: 'Основи англійської мови, граматика, розмовна практика',
-    instructor: 'Яджак Роксолана',
+    instructor: 'Оксана Шевченко',
     studentsCount: 45,
     topics: [
       {
@@ -138,7 +138,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '4 місяці',
     price: 600,
     description: 'Поглиблене вивчення німецької мови, бізнес-комунікація',
-    instructor: 'Криворучко Микола',
+    instructor: 'Андрій Бондаренко',
     studentsCount: 32,
     topics: [
       {
@@ -212,7 +212,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '2 місяці',
     price: 500,
     description: 'Швидкий курс для тих, хто планує подорож до Франції',
-    instructor: 'Кіліан Мбаппе',
+    instructor: 'Ірина Ткаченко',
     studentsCount: 28,
     topics: [
       {
@@ -255,7 +255,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '5 місяців',
     price: 600,
     description: 'Поглиблене вивчення іспанської мови та культури',
-    instructor: 'Степанова Ірина',
+    instructor: 'Максим Кравчук',
     studentsCount: 18,
     topics: [
       {
@@ -299,7 +299,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '3 місяці',
     price: 550,
     description: 'Спеціалізований курс для працевлаштування в Польщі',
-    instructor: 'Курило Володимир',
+    instructor: 'Наталія Савченко',
     studentsCount: 40,
     topics: [
       {
@@ -343,7 +343,7 @@ const coursesData: Array<Omit<FirestoreCourse, 'id' | 'createdAt' | 'updatedAt'>
     duration: '3 місяці',
     price: 500,
     description: 'Основи італійської мови та культури',
-    instructor: 'Ільницький Денис',
+    instructor: 'Дмитро Ковальчук',
     studentsCount: 22,
     topics: [
       {
